@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import pandas as pd
 
 app=Flask(__name__)
@@ -9,7 +9,11 @@ def open_file ():
 
 def open_file_corp ():
    data = pd.read_csv('companiesdb.csv')
-   return data[['Tag', 'Geo']]
+   return data
+
+def open_file_blue ():
+   data = pd.read_csv('bluetooth.csv')
+   return data
 
 def get_latlon():
    '''
@@ -28,8 +32,8 @@ def get_companies():
     Function to get the map data
    '''
    markers = []
-   ll_data = open_file_corp()
-   print(ll_data.head())
+   data = open_file_corp()
+   ll_data = data[['Tag', 'Geo']]
 
    for index, row in ll_data.iterrows():
       geo = row['Geo'].split(',')
@@ -37,17 +41,55 @@ def get_companies():
 
    return markers
 
-@app.route('/')
+def filter_types(iot_types):
+   '''
+
+   '''
+   iot = []
+   if ";" in iot_types:
+      iot = iot_types.split(";")
+   else:
+      iot.append(iot_types)
+   
+   markers = []
+
+   data = open_file_corp()
+   company_data = data[data['Tag'].isin(iot)][['Tag', 'Geo']]
+
+   for index, row in company_data.iterrows():
+      geo = row['Geo'].split(',')
+      markers.append({'lat': float(geo[0]), 'lon': float(geo[1]), 'tag':row['Tag']})
+
+   return markers
+
+   #blue = open_file_blue()
+   #filtered_companies = blue[blue['Company'].isin(company_id)]
+
+   #return filtered_companies
+   
+
+
+
+
+@app.route('/', methods = ['POST', 'GET'])
 def root():
+   
    markers = get_latlon()
    setup=markers[0]  
 
    return render_template('index.html',markers=markers, setup=setup )
 
-@app.route('/company')
+@app.route('/company', methods = ['POST', 'GET'])
 def company():
-   #todo: make the map take a coordinate
-   markers = get_companies()
+   if request.method == 'POST':
+      filter_company = request.form['iotfilter']
+
+      if filter_company == "":
+         markers = get_companies()
+      else:
+         markers = filter_types(filter_company)
+   else:
+      markers = get_companies()
    setup={'lat':0, 'lon':0} 
 
    return render_template('companies.html',markers=markers, setup=setup )
