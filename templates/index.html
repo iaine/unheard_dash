@@ -1,23 +1,89 @@
 <!doctype html>
 <html lang="en">
     <head>
-    <title>Route</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/universal.css') }}" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="crossorigin=""></script>
+        <title>Individiual Walk</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/universal.css') }}" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="crossorigin=""></script>
+        <!-- Load d3.js -->
+        <script src="https://d3js.org/d3.v4.js"></script>
     </head>
     <body>
-    
+        <form action = "/" method = "post">
+            <p>Enter Filter</p>
+            <p><input type = "text" name = "iotfilter" /></p>
+            <p><input type = "submit" value = "submit" /></p>
+         </form>     
         <div id="map"></div>
+        <!-- Create a div where the graph will take place -->
+        <div id="my_dataviz"></div>
+        <div id="companymap"></div>
         <script src="{{ url_for('static', filename='js/universal.js') }}" /></script>
         <script>
-            createMap({{setup['lat']}}, {{setup['lon']}}, 15);
+            createMap("map", {{setup['lat']}}, {{setup['lon']}}, 15);
         {% for marker in markers %}
             L.circle([{{ marker['lat'] }}, {{ marker['lon'] }}]).addTo(map)
-            <!--L.marker([{{ marker['lat'] }}, {{ marker['lon'] }}]).addTo(map).bindPopup("{{ marker['popup'] }}").openPopup(); -->
+        {% endfor %}
+
+        createMap("companymap", {{comp_setup['lat']}}, {{comp_setup['lon']}}, 1);
+        {% for company in companies %}
+            L.circle([{{ company['lat'] }}, {{ company['lon'] }}], 20, {color: getColour("{{ company['tag'] }}"), opacity:.5} ).addTo(map)
         {% endfor %}
         </script>
+        <script>
+// set the dimensions and margins of the graph
+var margin = {top: 30, right: 30, bottom: 70, left: 60},
+    width = 460 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+var svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+// Parse the Data
+function createPlot(data) {
+console.log(data);
+// X axis
+var x = d3.scaleBand()
+  .range([ 0, width ])
+  .domain(data.map(function(d) { return d.Country; }))
+  .padding(0.2);
+svg.append("g")
+  .attr("transform", "translate(0," + height + ")")
+  .call(d3.axisBottom(x))
+  .selectAll("text")
+    .attr("transform", "translate(-10,0)rotate(-45)")
+    .style("text-anchor", "end");
+
+// Add Y axis
+var y = d3.scaleLinear()
+  .domain([0, 13000])
+  .range([ height, 0]);
+svg.append("g")
+  .call(d3.axisLeft(y));
+
+// Bars
+svg.selectAll("mybar")
+  .data(data)
+  .enter()
+  .append("rect")
+    .attr("x", function(d) { return x(d.Country); })
+    .attr("y", function(d) { return y(d.Value); })
+    .attr("width", x.bandwidth())
+    .attr("height", function(d) { return height - y(d.Value); })
+    .attr("fill", "#69b3a2")
+
+}
+
+createPlot({{barplot}})
+
+</script>
         </body>
         </html>
