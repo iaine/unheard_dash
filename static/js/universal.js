@@ -1,6 +1,7 @@
 var map;
-function createMap(lat, lon, depth) {
-    map = L.map('map').setView([lat, lon], depth);
+function createMap(div, lat, lon, depth) {
+    //'map'
+    map = L.map(div).setView([lat, lon], depth);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
 }
