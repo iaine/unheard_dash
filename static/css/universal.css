@@ -3,3 +3,5 @@ html, body {height: 100%;width: 100vw;}
 body {padding: 0;margin: 0;}
 
 #map { height: 50%;width: 60vw; margin-left: 10vw; margin-top:10vw }
+
+#companymap { height: 50%;width: 60vw; margin-left: 10vw; margin-top:10vw }
