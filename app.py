@@ -1,5 +1,7 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, escape
 import pandas as pd
+from collections import Counter
+#import json
 
 app=Flask(__name__)
 
@@ -66,18 +68,40 @@ def filter_types(iot_types):
    #filtered_companies = blue[blue['Company'].isin(company_id)]
 
    #return filtered_companies
-   
 
+def filter_company_types (company):
+   '''
+   Get counts for tags by company
+   '''
+   counter_obj = Counter()
+   for comp in company:
+      counter_obj["\'" + comp['tag'] + "\'"] += 1
 
+   dict = {str(k):v for k,v in counter_obj.items()}
+   return dict
 
 
 @app.route('/', methods = ['POST', 'GET'])
 def root():
-   
-   markers = get_latlon()
-   setup=markers[0]  
+   if request.method == 'POST':
+      filter_company = request.form['iotfilter']
 
-   return render_template('index.html',markers=markers, setup=setup )
+      if filter_company == "":
+         companies = get_companies()
+      else:
+         companies = filter_types(filter_company)
+   else:   
+      companies = get_companies()
+
+   barplot = filter_company_types(companies)
+
+   markers = get_latlon()
+   setup=markers[0] 
+
+   comp_setup={'lat':0, 'lon':0}  
+
+   return render_template('index.html',markers=markers, setup=setup, 
+      companies=companies, comp_setup=comp_setup, barplot=escape(barplot) )
 
 @app.route('/company', methods = ['POST', 'GET'])
 def company():
